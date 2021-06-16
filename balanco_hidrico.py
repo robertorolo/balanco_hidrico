@@ -112,37 +112,39 @@ def calcular():
 
     #removendo a minibacia original
     bd_i = ad_idx[0]
-    ad = ad[1:]
-    ad_idx = ad_idx[1:]
+    #ad = ad[1:]
+    #ad_idx = ad_idx[1:]
     
     t2 = time()
     delta_t = t2 - t1
     print('Isso levou {} segundos \n'.format(int(delta_t)))
     
-    print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
-    t1 = time()
-    polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
-    mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
-    xs = []
-    ys = []
-    ids = []
-    for idx, row in df_extrato_siout.iterrows():
-        p = Point(row['Longitude'], row['Latitude'])
-        if p.within(mini_bacias_uniao[0]):
-            xs.append(p.x)
-            ys.append(p.y)
-            ids.append(idx)
-    t2 = time()
-    delta_t = t2 - t1
-    print('Isso levou {} segundos \n'.format(int(delta_t)))
+    #processos do siout na area de drenagem
+    if len(mini_bacias.iloc[ad_idx]) > 0:
+        print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
+        t1 = time()
+        polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
+        mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
+        xs = []
+        ys = []
+        ids = []
+        for idx, row in df_extrato_siout.iterrows():
+            p = Point(row['Longitude'], row['Latitude'])
+            if p.within(mini_bacias_uniao[0]):
+                xs.append(p.x)
+                ys.append(p.y)
+                ids.append(idx)
+        t2 = time()
+        delta_t = t2 - t1
+        print('Isso levou {} segundos \n'.format(int(delta_t)))
 
     #Plotando os mapas
-    fig, ax = plt.subplots(figsize=(12,12))
+    fig, ax = plt.subplots(figsize=(10,10))
     bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
-    if len(mini_bacias.iloc[ad_idx]) > 0:
-        mini_bacias.loc[ad_idx, 'geometry'].plot(ax=ax, color='gray', alpha=1)
     mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='green', alpha=1)
-    ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
+    if len(mini_bacias.iloc[ad_idx]) > 0:
+        mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
+        ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
     ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
     plt.title('Bacia {}'.format(bacia))
     plt.ylabel('Latitude')
@@ -158,12 +160,16 @@ def calcular():
     #plotando o balanço hídrico
     vaz_simulada = float(entry_vs.get().replace(',','.'))
     vaz_bacias = mini_bacias.loc[bd_i, ['Qref01', 'Qref02', 'Qref03', 'Qref04', 'Qref05', 'Qref06', 'Qref07', 'Qref08', 'Qref09', 'Qref10', 'Qref11', 'Qref12']].values
-    vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
+    if len(mini_bacias.iloc[ad_idx]) > 0:
+        vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
+        vaz_siout_mes = np.sum(vaz_siout, axis=0).values
+    else:
+        vaz_siout = np.zeros(12)
+        vaz_siout_mes = vaz_siout
 
     perc_out =  mini_bacias.loc[bd_i, 'perc_out']
     print('Máximo outorgável: {}'.format(perc_out))
     vaz_max_out = vaz_bacias * perc_out
-    vaz_siout_mes = np.sum(vaz_siout, axis=0).values 
     bal_inicial = vaz_max_out - vaz_siout_mes 
     bal_final = bal_inicial - vaz_simulada
     
@@ -178,17 +184,17 @@ def calcular():
 
     tick_label = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
-    fig, axs = plt.subplots(2, 1, figsize=(12,12))
+    fig, axs = plt.subplots(2, 1, figsize=(15,8))
 
     axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label)
     for x,y in zip([x for x in range(1, 13)], bal_inicial):
-        axs[0].text(x, y, str(round(y,4)))
+        axs[0].text(x-.25, y, str(round(y,4)))
     axs[0].set_title('Balanço inicial')
     axs[0].set_ylabel('Vazão m³/s')
     axs[0].grid()
     axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label)
     for x,y in zip([x for x in range(1, 13)], bal_final):
-        axs[1].text(x, y, str(round(y,4)))
+        axs[1].text(x-.25, y, str(round(y,4)))
     axs[1].set_title('Balanço final')
     axs[1].set_ylabel('Vazão m³/s')
     axs[1].grid()
