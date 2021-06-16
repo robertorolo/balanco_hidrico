@@ -144,7 +144,7 @@ def calcular():
     #Plotando os mapas
     fig, ax = plt.subplots(figsize=(10,10))
     bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
-    mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='green', alpha=1)
+    mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='black', alpha=1)
     if len(mini_bacias.iloc[ad_idx[1:]]) > 0:
         mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
         ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
