@@ -7,8 +7,11 @@ from shapely.geometry import Point
 from shapely.ops import cascaded_union
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from time import time
+import matplotlib.pyplot as plt
+
+from matplotlib import rcParams
+rcParams.update({'figure.autolayout': True})
 
 arquivo_bacias = "dados/bacias/Bacia_Hidrografica.shp"
 
@@ -25,7 +28,7 @@ dic_cod_bacia = {
     'tramandaí': "dados/mini_bacias/L010_mini_19_02.shp",
     'litoral médio': "dados/mini_bacias/L020_mini_19_02.shp",
     'camaquã': "dados/mini_bacias/L030_mini_19_02.shp",
-    'mirim-são gonçalo': "dados/mini_bacias/L040_mini_19_02.shp",
+    'mirim são gonçalo': "dados/mini_bacias/L040_mini_19_02.shp",
     'mampituba': "dados/mini_bacias/L050_mini_19_02.shp",
     'apuaê-inhandava': "dados/mini_bacias/U010_mini_19_02.shp",
     'passo fundo': "dados/mini_bacias/U020_mini_19_02.shp",
@@ -199,6 +202,7 @@ def calcular():
     axs[1].set_ylabel('Vazão m³/s')
     axs[1].grid()
 
+    plt.tight_layout()
     plt.show()
 
 def selecionar_extrato():
