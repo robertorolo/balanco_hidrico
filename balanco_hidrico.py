@@ -145,7 +145,7 @@ def calcular():
     fig, ax = plt.subplots(figsize=(10,10))
     bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
     mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='green', alpha=1)
-    if len(mini_bacias.iloc[ad_idx]) > 0:
+    if len(mini_bacias.iloc[ad_idx[1:]]) > 0:
         mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
         ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
     ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
@@ -189,13 +189,15 @@ def calcular():
 
     fig, axs = plt.subplots(2, 1, figsize=(15,8))
 
-    axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label)
+    cores = np.where(bal_inicial > 0, 'g', 'r')
+    axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label, color=cores)
     for x,y in zip([x for x in range(1, 13)], bal_inicial):
         axs[0].text(x-.25, y, str(round(y,4)))
     axs[0].set_title('Balanço inicial')
     axs[0].set_ylabel('Vazão m³/s')
     axs[0].grid()
-    axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label)
+    cores = np.where(bal_final > 0, 'g', 'r')
+    axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label, color=cores)
     for x,y in zip([x for x in range(1, 13)], bal_final):
         axs[1].text(x-.25, y, str(round(y,4)))
     axs[1].set_title('Balanço final')
