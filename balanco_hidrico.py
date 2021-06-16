@@ -78,7 +78,6 @@ def calcular():
     mini_bacias = geopandas.read_file(dic_cod_bacia[bacia.lower()])
     #mini_bacias = mini_bacias.to_crs("EPSG:4674")
 
-    
     print('Verificando a qual mini bacia o ponto informado petence...')
     for idx, row in mini_bacias.iterrows():
         if ponto_informado.within(row['geometry']):
@@ -120,8 +119,6 @@ def calcular():
     delta_t = t2 - t1
     print('Isso levou {} segundos \n'.format(int(delta_t)))
     
-    #print('As mini bacias que pertencem a area de drenagem são {}\n'.format(ad))
-
     print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
     t1 = time()
     polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
@@ -142,12 +139,11 @@ def calcular():
     #Plotando os mapas
     fig, ax = plt.subplots(figsize=(12,12))
     bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
-    mini_bacias.loc[ad_idx, 'geometry'].plot(ax=ax, color='gray', alpha=1)
+    if len(mini_bacias.iloc[ad_idx]) > 0:
+        mini_bacias.loc[ad_idx, 'geometry'].plot(ax=ax, color='gray', alpha=1)
     mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='green', alpha=1)
     ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
-
     ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
-
     plt.title('Bacia {}'.format(bacia))
     plt.ylabel('Latitude')
     plt.xlabel('Longitude')
@@ -157,7 +153,7 @@ def calcular():
     plt.tight_layout()
     plt.show()
 
-    print('Feche a janela do mapa para mostrtar o próximo gráfico.\n')sa
+    print('Feche a janela do mapa para mostrtar o próximo gráfico.\n')
 
     #plotando o balanço hídrico
     vaz_simulada = float(entry_vs.get().replace(',','.'))
@@ -185,10 +181,14 @@ def calcular():
     fig, axs = plt.subplots(2, 1, figsize=(12,12))
 
     axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label)
+    for x,y in zip([x for x in range(1, 13)], bal_inicial):
+        axs[0].text(x, y, str(round(y,4)))
     axs[0].set_title('Balanço inicial')
     axs[0].set_ylabel('Vazão m³/s')
     axs[0].grid()
     axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label)
+    for x,y in zip([x for x in range(1, 13)], bal_final):
+        axs[1].text(x, y, str(round(y,4)))
     axs[1].set_title('Balanço final')
     axs[1].set_ylabel('Vazão m³/s')
     axs[1].grid()
