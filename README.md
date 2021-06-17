@@ -12,6 +12,7 @@ Dadas coordenadas de latitude e longitude, um extrato de siout e o valor da vaz�
 
 ### Mapa
 ![alt text](figs/mapa.png)
+![alt text](figs/mapa1.png)
 
 ### Balanço hídrico
 ![alt text](figs/bal_hid1.png)
