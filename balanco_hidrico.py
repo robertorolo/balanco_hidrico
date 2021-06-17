@@ -47,6 +47,13 @@ dic_cod_bacia = {
 print('Essa janela de terminal é aberta para mostrar possíveis erros.')
 print('Envie qualquer mensagem de erro encontrada para roberto-rolo@sema.rs.gov.br.\n')
 
+def remover_duplicatas(lista):
+    s = []
+    for i in lista:
+        if i not in s:
+            s.append(i)
+    return s
+
 def str_num_to_float(str_array):
     float_array = []
     for i in str_array:
@@ -97,12 +104,14 @@ def calcular():
         print('Há {} mini bacias.'.format(len(mini_bacias)))
         t1 = time()
         ad = [mini_bacia]
-        ad_idx = [mini_bacia_idxs]
         ad_c = ad.copy()
+        ad_idx = [mini_bacia_idxs]
         c = 1
         
         existe_bacia = True
         while existe_bacia == True:
+            ad = remover_duplicatas(ad)
+            ad_idx = remover_duplicatas(ad_idx)
             print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
             ad_p = []
             for mb in ad_c:
@@ -115,6 +124,7 @@ def calcular():
             else:
                 ad = ad + ad_p
                 ad_c = ad_p.copy()
+                ad_c = remover_duplicatas(ad_c)
                 c = c + 1
 
         #removendo a minibacia original
