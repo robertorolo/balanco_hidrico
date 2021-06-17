@@ -238,6 +238,7 @@ def selecionar_extrato():
     for c in colunas:
         df_extrato_siout[c] = str_num_to_float(df_extrato_siout[c].values)
     print('Extrato do SIOUT lido com sucesso!\n')
+    print('ATENÇÃO: o programa não faz nenhuma filtragem no extrato do SIOUT. Todos os cadastros listados serão levados em consideração no balanço hídrico!\n')
 
 #GUI
 root = Tk()
