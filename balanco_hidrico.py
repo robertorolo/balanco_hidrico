@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 from time import time
 import matplotlib.pyplot as plt
+import sys
 
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -31,7 +32,7 @@ dic_cod_bacia = {
     'mirim são gonçalo': "dados/mini_bacias/L040_mini_19_02.shp",
     'mampituba': "dados/mini_bacias/L050_mini_19_02.shp",
     'apuaê-inhandava': "dados/mini_bacias/U010_mini_19_02.shp",
-    'passo fundo': "dados/mini_bacias/U020_mini_19_02.shp",
+    'passo fundo': "dados/mini_bacias/U020_min_19_02.shp",
     'turvo santa rosa santo cristo': "dados/mini_bacias/U030_mini_19_02.shp",
     'piratinim': "dados/mini_bacias/U040_mini_19_02.shp",
     'ibicuí': "dados/mini_bacias/U050_mini_19_02.shp",
@@ -43,7 +44,7 @@ dic_cod_bacia = {
     'butuí-icamaquã': "dados/mini_bacias/U110_mini_19_02.shp",
 }
 
-print('Essa janela de terminal é aberta para mostrar possíveis erros.\n')
+print('Essa janela de terminal é aberta para mostrar possíveis erros.')
 print('Envie qualquer mensagem de erro encontrada para roberto-rolo@sema.rs.gov.br.\n')
 
 def str_num_to_float(str_array):
@@ -70,142 +71,151 @@ def calcular():
     print('O ponto informado é: {}\n'.format(ponto_informado))
 
     print('Verificando a qual bacia o ponto informado petence...')
+    pertence = False
     for idx, row in bacias.iterrows():
         if ponto_informado.within(row['geometry']):
             bacia = row['nome']
             bacia_idx = idx
+            print('O ponto selcionado pertence a bacia {}\n'.format(bacia))
+            pertence = True
             break
-    print('O ponto selcionado pertence a bacia {}\n'.format(bacia))
+    if pertence == True:        
 
-    print('Lendo arquivo de mini bacias...\n')
-    mini_bacias = geopandas.read_file(dic_cod_bacia[bacia.lower()])
-    #mini_bacias = mini_bacias.to_crs("EPSG:4674")
+        print('Lendo arquivo de mini bacias...\n')
+        mini_bacias = geopandas.read_file(dic_cod_bacia[bacia.lower()])
+        #mini_bacias = mini_bacias.to_crs("EPSG:4674")
 
-    print('Verificando a qual mini bacia o ponto informado petence...')
-    for idx, row in mini_bacias.iterrows():
-        if ponto_informado.within(row['geometry']):
-            mini_bacia = int(row['Mini'])
-            mini_bacia_idxs = idx
-            print('O ponto selcionado pertence a mini bacia {}\n'.format(mini_bacia))
-            break
+        print('Verificando a qual mini bacia o ponto informado petence...')
+        for idx, row in mini_bacias.iterrows():
+            if ponto_informado.within(row['geometry']):
+                mini_bacia = int(row['Mini'])
+                mini_bacia_idxs = idx
+                print('O ponto selcionado pertence a mini bacia {}\n'.format(mini_bacia))
+                break
 
-    print('Encontrando as mini bacias que pertencem a área de drenagem...')
-    print('Há {} mini bacias.'.format(len(mini_bacias)))
-    t1 = time()
-    ad = [mini_bacia]
-    ad_idx = [mini_bacia_idxs]
-    ad_c = ad.copy()
-    c = 1
-    
-    existe_bacia = True
-    while existe_bacia == True:
-        print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
-        ad_p = []
-        for mb in ad_c:
-            f = mini_bacias['MiniJus'] == mb
-            filtrado = mini_bacias[f]
-            ad_p = ad_p + list(filtrado['Mini'].values)
-            ad_idx = ad_idx + list(filtrado.index.values)
-        if len(ad_p) == 0:
-            existe_bacia = False
-        else:
-            ad = ad + ad_p
-            ad_c = ad_p.copy()
-            c = c + 1
-
-    #removendo a minibacia original
-    bd_i = ad_idx[0]
-    #ad = ad[1:]
-    #ad_idx = ad_idx[1:]
-    
-    t2 = time()
-    delta_t = t2 - t1
-    print('Isso levou {} segundos \n'.format(int(delta_t)))
-    
-    #processos do siout na area de drenagem
-    if len(mini_bacias.iloc[ad_idx]) > 0:
-        print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
+        print('Encontrando as mini bacias que pertencem a área de drenagem...')
+        print('Há {} mini bacias.'.format(len(mini_bacias)))
         t1 = time()
-        polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
-        mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
-        xs = []
-        ys = []
-        ids = []
-        for idx, row in df_extrato_siout.iterrows():
-            p = Point(row['Longitude'], row['Latitude'])
-            if p.within(mini_bacias_uniao[0]):
-                xs.append(p.x)
-                ys.append(p.y)
-                ids.append(idx)
+        ad = [mini_bacia]
+        ad_idx = [mini_bacia_idxs]
+        ad_c = ad.copy()
+        c = 1
+        
+        existe_bacia = True
+        while existe_bacia == True:
+            print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
+            ad_p = []
+            for mb in ad_c:
+                f = mini_bacias['MiniJus'] == mb
+                filtrado = mini_bacias[f]
+                ad_p = ad_p + list(filtrado['Mini'].values)
+                ad_idx = ad_idx + list(filtrado.index.values)
+            if len(ad_p) == 0:
+                existe_bacia = False
+            else:
+                ad = ad + ad_p
+                ad_c = ad_p.copy()
+                c = c + 1
+
+        #removendo a minibacia original
+        bd_i = ad_idx[0]
+        #ad = ad[1:]
+        #ad_idx = ad_idx[1:]
+        
         t2 = time()
         delta_t = t2 - t1
         print('Isso levou {} segundos \n'.format(int(delta_t)))
+        
+        #processos do siout na area de drenagem
+        if len(mini_bacias.iloc[ad_idx]) > 0:
+            print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
+            t1 = time()
+            polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
+            mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
+            xs = []
+            ys = []
+            ids = []
+            for idx, row in df_extrato_siout.iterrows():
+                p = Point(row['Longitude'], row['Latitude'])
+                if p.within(mini_bacias_uniao[0]):
+                    xs.append(p.x)
+                    ys.append(p.y)
+                    ids.append(idx)
+            t2 = time()
+            delta_t = t2 - t1
+            print('Isso levou {} segundos \n'.format(int(delta_t)))
 
-    #Plotando os mapas
-    fig, ax = plt.subplots(figsize=(10,10))
-    bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
-    mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='black', alpha=1)
-    if len(mini_bacias.iloc[ad_idx[1:]]) > 0:
-        mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
-        ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
-    ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
-    plt.title('Bacia {}'.format(bacia))
-    plt.ylabel('Latitude')
-    plt.xlabel('Longitude')
-    plt.legend()
-    plt.grid()
+        #Plotando os mapas
+        fig, ax = plt.subplots(figsize=(8,8))
+        bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
+        mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='black', alpha=1)
+        if len(mini_bacias.iloc[ad_idx[1:]]) > 0:
+            mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
+            ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
+        ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
+        plt.title('Bacia {}'.format(bacia))
+        plt.ylabel('Latitude')
+        plt.xlabel('Longitude')
+        plt.legend()
+        plt.grid()
+        
+        plt.tight_layout()
+        #manager = plt.get_current_fig_manager()
+        #manager.full_screen_toggle()
+        plt.show()
+
+        #plotando o balanço hídrico
+        vaz_simulada = float(entry_vs.get().replace(',','.'))
+        vaz_bacias = mini_bacias.loc[bd_i, ['Qref01', 'Qref02', 'Qref03', 'Qref04', 'Qref05', 'Qref06', 'Qref07', 'Qref08', 'Qref09', 'Qref10', 'Qref11', 'Qref12']].values
+        if len(mini_bacias.iloc[ad_idx]) > 0:
+            vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
+            vaz_siout_mes = np.sum(vaz_siout, axis=0).values
+        else:
+            vaz_siout = np.zeros(12)
+            vaz_siout_mes = vaz_siout
+
+        print('PROPRIEDADES:')
+        perc_out =  mini_bacias.loc[bd_i, 'perc_out']
+        print('Máximo outorgável: {}'.format(perc_out))
+        vaz_max_out = vaz_bacias * perc_out
+        bal_inicial = vaz_max_out - vaz_siout_mes 
+        bal_final = bal_inicial - vaz_simulada
+        
+        print('Vazão da bacia: {}'.format(vaz_bacias))
+        print('Usos SIOUT: {}'.format(vaz_siout_mes))
+        print('Balanço inicial: {}'.format(bal_inicial))
+        print('Balanço final: {}'.format(bal_final))
+
+        area_de_drenagem = mini_bacias.loc[bd_i, 'AreaDren']
+        print('Área de drenagem: {}'.format(area_de_drenagem))
+        #print('Vazão de referência: {}'.format('N/D'))
+
+        tick_label = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+        fig, axs = plt.subplots(2, 1, figsize=(15,8))
+
+        cores = np.where(bal_inicial > 0, 'g', 'r')
+        axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label, color=cores)
+        for x,y in zip([x for x in range(1, 13)], bal_inicial):
+            axs[0].text(x-.25, y, str(round(y,4)))
+        axs[0].set_title('Balanço inicial')
+        axs[0].set_ylabel('Vazão m³/s')
+        axs[0].grid()
+        cores = np.where(bal_final > 0, 'g', 'r')
+        axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label, color=cores)
+        for x,y in zip([x for x in range(1, 13)], bal_final):
+            axs[1].text(x-.25, y, str(round(y,4)))
+        axs[1].set_title('Balanço final')
+        axs[1].set_ylabel('Vazão m³/s')
+        axs[1].grid()
+
+        plt.tight_layout()
+        #manager = plt.get_current_fig_manager()
+        #manager.full_screen_toggle()
+        plt.show()
     
-    plt.tight_layout()
-    plt.show()
-
-    print('Feche a janela do mapa para mostrtar o próximo gráfico.\n')
-
-    #plotando o balanço hídrico
-    vaz_simulada = float(entry_vs.get().replace(',','.'))
-    vaz_bacias = mini_bacias.loc[bd_i, ['Qref01', 'Qref02', 'Qref03', 'Qref04', 'Qref05', 'Qref06', 'Qref07', 'Qref08', 'Qref09', 'Qref10', 'Qref11', 'Qref12']].values
-    if len(mini_bacias.iloc[ad_idx]) > 0:
-        vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
-        vaz_siout_mes = np.sum(vaz_siout, axis=0).values
     else:
-        vaz_siout = np.zeros(12)
-        vaz_siout_mes = vaz_siout
-
-    perc_out =  mini_bacias.loc[bd_i, 'perc_out']
-    print('Máximo outorgável: {}'.format(perc_out))
-    vaz_max_out = vaz_bacias * perc_out
-    bal_inicial = vaz_max_out - vaz_siout_mes 
-    bal_final = bal_inicial - vaz_simulada
-    
-    print('Vazão da bacia: {}'.format(vaz_bacias))
-    print('Usos SIOUT: {}'.format(vaz_siout_mes))
-    print('Balanço inicial: {}'.format(bal_inicial))
-    print('Balanço final: {}'.format(bal_final))
-
-    area_de_drenagem = mini_bacias.loc[bd_i, 'AreaDren']
-    print('Área de drenagem: {}'.format(area_de_drenagem))
-    print('Vazão de referência: {}'.format('N/D'))
-
-    tick_label = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-
-    fig, axs = plt.subplots(2, 1, figsize=(15,8))
-
-    cores = np.where(bal_inicial > 0, 'g', 'r')
-    axs[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label, color=cores)
-    for x,y in zip([x for x in range(1, 13)], bal_inicial):
-        axs[0].text(x-.25, y, str(round(y,4)))
-    axs[0].set_title('Balanço inicial')
-    axs[0].set_ylabel('Vazão m³/s')
-    axs[0].grid()
-    cores = np.where(bal_final > 0, 'g', 'r')
-    axs[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label, color=cores)
-    for x,y in zip([x for x in range(1, 13)], bal_final):
-        axs[1].text(x-.25, y, str(round(y,4)))
-    axs[1].set_title('Balanço final')
-    axs[1].set_ylabel('Vazão m³/s')
-    axs[1].grid()
-
-    plt.tight_layout()
-    plt.show()
+        print('O ponto não pertence ao estado do RS.')
 
 def selecionar_extrato():
     print('Lendo extrato do SIOUT...')
