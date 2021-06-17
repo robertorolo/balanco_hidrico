@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-from tkinter import Tk, Label, Button, Entry
-from tkinter.filedialog import askopenfilename
+from tkinter import Tk, Label, Button, Entry, Checkbutton, IntVar
+from tkinter.filedialog import askopenfilename, asksaveasfile
 import geopandas
+import fiona
 from shapely.geometry import Point
 from shapely.ops import cascaded_union
 import pandas as pd
 import numpy as np
 from time import time
 import matplotlib.pyplot as plt
-import sys
+
+fiona.supported_drivers['KML'] = 'rw'
 
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
@@ -44,7 +46,7 @@ dic_cod_bacia = {
     'butuí-icamaquã': "dados/mini_bacias/U110_mini_19_02.shp",
 }
 
-print('Essa janela de terminal é aberta para mostrar possíveis erros.')
+print('Essa janela de terminal é aberta para mostrar a execução do software e possíveis erros.')
 print('Envie qualquer mensagem de erro encontrada para roberto-rolo@sema.rs.gov.br.\n')
 
 def remover_duplicatas(lista):
@@ -142,6 +144,11 @@ def calcular():
             t1 = time()
             polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
             mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
+            
+            if kml_b.get() == 1:
+                arquivo_kml = asksaveasfile(defaultextension=".kml")
+                mini_bacias_uniao.to_file(arquivo_kml.name, driver='KML')
+            
             xs = []
             ys = []
             ids = []
@@ -266,7 +273,11 @@ entry_vs.grid(row=2, column=1, sticky='E', padx=10, pady=10)
 btn_extrato = Button(root, text="Selecione o extrato do SIOUT", command=selecionar_extrato)
 btn_extrato.grid(row=3, column=0, sticky='W', padx=10, pady=10)
 
+kml_b = IntVar()
+salvar_kml = Checkbutton(root, variable=kml_b, onvalue=1, offvalue=0, text='Salvar KML')
+salvar_kml.grid(row=4, column=0, sticky='W', padx=10, pady=10)
+
 btn_calcular = Button(root, text="Calcular balanço hídrico", command=calcular)
-btn_calcular.grid(row=4, column=1, sticky='E', padx=10, pady=10)
+btn_calcular.grid(row=5, column=1, sticky='E', padx=10, pady=10)
 
 root.mainloop()
