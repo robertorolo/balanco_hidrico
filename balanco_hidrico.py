@@ -16,6 +16,8 @@ fiona.supported_drivers['KML'] = 'rw'
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
+kml_carregado = False
+
 arquivo_bacias = "dados/bacias/Bacia_Hidrografica.shp"
 
 dic_cod_bacia = {
@@ -49,6 +51,31 @@ dic_cod_bacia = {
 print('Essa janela de terminal é aberta para mostrar a execução do software e possíveis erros.')
 print('Envie qualquer mensagem de erro encontrada para roberto-rolo@sema.rs.gov.br.\n')
 
+def selecionar_extrato():
+    print('Lendo extrato do SIOUT...')
+    extrato_siout = askopenfilename()
+    print(extrato_siout)
+    global df_extrato_siout
+    df_extrato_siout = pd.read_csv(extrato_siout, sep=';', encoding='unicode_escape')
+    print('Transformando as colunas de string para float...')
+    colunas= ['Latitude', 'Longitude', 'Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']
+    for c in colunas:
+        df_extrato_siout[c] = str_num_to_float(df_extrato_siout[c].values)
+    print('Extrato do SIOUT lido com sucesso!\n')
+    print('ATENÇÃO: o programa não faz nenhuma filtragem no extrato do SIOUT. Todos os cadastros listados serão levados em consideração no balanço hídrico!\n')
+    btn_extrato["text"] = "extrato SIOUT carregado"
+    
+def selecionar_kml():
+    print('Lendo kml da área de drenagem...')
+    area_kml_str = askopenfilename()
+    print(area_kml_str)
+    global area_kml
+    area_kml = geopandas.read_file(area_kml_str, driver='KML')
+    print('Área de drenagem lida com sucesso!\n')
+    global kml_carregado
+    kml_carregado = True
+    btn_kml["text"] = "kml carregado"
+
 def remover_duplicatas(lista):
     s = []
     for i in lista:
@@ -65,6 +92,28 @@ def str_num_to_float(str_array):
             i = str(i).replace(',', '.')
         float_array.append(float(i))
     return np.array(float_array)
+    
+def procurar_cadastros_siout(extrato, area):
+
+    #processos do siout na area de drenagem
+    print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
+    t1 = time()
+
+    xs = []
+    ys = []
+    ids = []
+    for idx, row in extrato.iterrows():
+        p = Point(row['Longitude'], row['Latitude'])
+        if p.within(area[0]):
+            xs.append(p.x)
+            ys.append(p.y)
+            ids.append(idx)
+    
+    t2 = time()
+    delta_t = t2 - t1
+    print('Isso levou {} segundos \n'.format(int(delta_t)))
+    
+    return xs, ys, ids
 
 def calcular():
     print('Calculando balanço hídrico...\n')
@@ -88,6 +137,7 @@ def calcular():
             print('O ponto selcionado pertence a bacia {}\n'.format(bacia))
             pertence = True
             break
+    
     if pertence == True:        
 
         print('Lendo arquivo de mini bacias...\n')
@@ -102,74 +152,61 @@ def calcular():
                 print('O ponto selcionado pertence a mini bacia {}\n'.format(mini_bacia))
                 break
 
-        print('Encontrando as mini bacias que pertencem a área de drenagem...')
-        print('Há {} mini bacias.'.format(len(mini_bacias)))
-        t1 = time()
-        ad = [mini_bacia]
-        ad_c = ad.copy()
-        ad_idx = [mini_bacia_idxs]
-        c = 1
+        if kml_carregado == False:
         
-        existe_bacia = True
-        while existe_bacia == True:
-            ad = remover_duplicatas(ad)
-            ad_idx = remover_duplicatas(ad_idx)
-            print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
-            ad_p = []
-            for mb in ad_c:
-                f = mini_bacias['MiniJus'] == mb
-                filtrado = mini_bacias[f]
-                ad_p = ad_p + list(filtrado['Mini'].values)
-                ad_idx = ad_idx + list(filtrado.index.values)
-            if len(ad_p) == 0:
-                existe_bacia = False
-            else:
-                ad = ad + ad_p
-                ad_c = ad_p.copy()
-                ad_c = remover_duplicatas(ad_c)
-                c = c + 1
-
-        #removendo a minibacia original
-        bd_i = ad_idx[0]
-        #ad = ad[1:]
-        #ad_idx = ad_idx[1:]
-        
-        t2 = time()
-        delta_t = t2 - t1
-        print('Isso levou {} segundos \n'.format(int(delta_t)))
-        
-        #processos do siout na area de drenagem
-        if len(mini_bacias.iloc[ad_idx]) > 0:
-            print('Encontrando os processos do SIOUT que pertencem a área de drenagem...')
+            print('Encontrando as mini bacias que pertencem a área de drenagem...')
+            print('Há {} mini bacias.'.format(len(mini_bacias)))
             t1 = time()
+            ad = [mini_bacia]
+            ad_c = ad.copy()
+            ad_idx = [mini_bacia_idxs]
+            c = 1
+            
+            existe_bacia = True
+            while existe_bacia == True:
+                ad = remover_duplicatas(ad)
+                ad_idx = remover_duplicatas(ad_idx)
+                print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
+                ad_p = []
+                for mb in ad_c:
+                    f = mini_bacias['MiniJus'] == mb
+                    filtrado = mini_bacias[f]
+                    ad_p = ad_p + list(filtrado['Mini'].values)
+                    ad_idx = ad_idx + list(filtrado.index.values)
+                if len(ad_p) == 0:
+                    existe_bacia = False
+                else:
+                    ad = ad + ad_p
+                    ad_c = ad_p.copy()
+                    ad_c = remover_duplicatas(ad_c)
+                    c = c + 1
+            
+            t2 = time()
+            delta_t = t2 - t1
+            print('Isso levou {} segundos \n'.format(int(delta_t)))
+        
             polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
             mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
-            
+
             if kml_b.get() == 1:
                 arquivo_kml = asksaveasfile(defaultextension=".kml")
                 mini_bacias_uniao.to_file(arquivo_kml.name, driver='KML')
             
-            xs = []
-            ys = []
-            ids = []
-            for idx, row in df_extrato_siout.iterrows():
-                p = Point(row['Longitude'], row['Latitude'])
-                if p.within(mini_bacias_uniao[0]):
-                    xs.append(p.x)
-                    ys.append(p.y)
-                    ids.append(idx)
-            t2 = time()
-            delta_t = t2 - t1
-            print('Isso levou {} segundos \n'.format(int(delta_t)))
-
+        else:
+            
+            mini_bacias_uniao = area_kml.loc[[0], 'geometry']
+        
+        xs, ys, ids = procurar_cadastros_siout(df_extrato_siout, mini_bacias_uniao)
+       
         #Plotando os mapas
         fig, ax = plt.subplots(figsize=(8,8))
+        
         bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
-        mini_bacias.loc[[bd_i], 'geometry'].plot(ax=ax, color='black', alpha=1)
-        if len(mini_bacias.iloc[ad_idx[1:]]) > 0:
-            mini_bacias.loc[ad_idx[1:], 'geometry'].plot(ax=ax, color='gray', alpha=1)
-            ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
+        mini_bacias_uniao.plot(ax=ax, color='gray', alpha=1)
+        mini_bacias.loc[[mini_bacia_idxs], 'geometry'].plot(ax=ax, color='black', alpha=1)
+        ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
         ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
+        
         plt.title('Bacia {}'.format(bacia))
         plt.ylabel('Latitude')
         plt.xlabel('Longitude')
@@ -183,16 +220,12 @@ def calcular():
 
         #plotando o balanço hídrico
         vaz_simulada = float(entry_vs.get().replace(',','.'))
-        vaz_bacias = mini_bacias.loc[bd_i, ['Qref01', 'Qref02', 'Qref03', 'Qref04', 'Qref05', 'Qref06', 'Qref07', 'Qref08', 'Qref09', 'Qref10', 'Qref11', 'Qref12']].values
-        if len(mini_bacias.iloc[ad_idx]) > 0:
-            vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
-            vaz_siout_mes = np.sum(vaz_siout, axis=0).values
-        else:
-            vaz_siout = np.zeros(12)
-            vaz_siout_mes = vaz_siout
+        vaz_bacias = mini_bacias.loc[mini_bacia_idxs, ['Qref01', 'Qref02', 'Qref03', 'Qref04', 'Qref05', 'Qref06', 'Qref07', 'Qref08', 'Qref09', 'Qref10', 'Qref11', 'Qref12']].values
+        vaz_siout = df_extrato_siout.loc[ids, ['Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']]
+        vaz_siout_mes = np.sum(vaz_siout, axis=0).values
 
         print('PROPRIEDADES:')
-        perc_out =  mini_bacias.loc[bd_i, 'perc_out']
+        perc_out =  mini_bacias.loc[mini_bacia_idxs, 'perc_out']
         print('Máximo outorgável: {}'.format(perc_out))
         vaz_max_out = vaz_bacias * perc_out
         bal_inicial = vaz_max_out - vaz_siout_mes 
@@ -203,7 +236,7 @@ def calcular():
         print('Balanço inicial: {}'.format(bal_inicial))
         print('Balanço final: {}'.format(bal_final))
 
-        area_de_drenagem = mini_bacias.loc[bd_i, 'AreaDren']
+        area_de_drenagem = mini_bacias.loc[mini_bacia_idxs, 'AreaDren']
         print('Área de drenagem: {}'.format(area_de_drenagem))
         #print('Vazão de referência: {}'.format('N/D'))
 
@@ -233,20 +266,7 @@ def calcular():
     
     else:
         print('O ponto não pertence ao estado do RS.')
-
-def selecionar_extrato():
-    print('Lendo extrato do SIOUT...')
-    extrato_siout = askopenfilename()
-    print(extrato_siout)
-    global df_extrato_siout
-    df_extrato_siout = pd.read_csv(extrato_siout, sep=';', encoding='unicode_escape')
-    print('Transformando as colunas de string para float...')
-    colunas= ['Latitude', 'Longitude', 'Vazão janeiro', 'Vazão fevereiro', 'Vazão março', 'Vazão abril', 'Vazão maio', 'Vazão junho', 'Vazão julho', 'Vazão agosto', 'Vazão setembro', 'Vazão outubro', 'Vazão novembro', 'Vazão dezembro']
-    for c in colunas:
-        df_extrato_siout[c] = str_num_to_float(df_extrato_siout[c].values)
-    print('Extrato do SIOUT lido com sucesso!\n')
-    print('ATENÇÃO: o programa não faz nenhuma filtragem no extrato do SIOUT. Todos os cadastros listados serão levados em consideração no balanço hídrico!\n')
-
+  
 #GUI
 root = Tk()
 root.title("Balanço hídrico")
@@ -277,7 +297,10 @@ kml_b = IntVar()
 salvar_kml = Checkbutton(root, variable=kml_b, onvalue=1, offvalue=0, text='Salvar KML')
 salvar_kml.grid(row=4, column=0, sticky='W', padx=10, pady=10)
 
+btn_kml = Button(root, text="Carregar área de drenagem", command=selecionar_kml)
+btn_kml.grid(row=5, column=0, sticky='W', padx=10, pady=10)
+
 btn_calcular = Button(root, text="Calcular balanço hídrico", command=calcular)
-btn_calcular.grid(row=5, column=1, sticky='E', padx=10, pady=10)
+btn_calcular.grid(row=6, column=1, sticky='E', padx=10, pady=10)
 
 root.mainloop()
