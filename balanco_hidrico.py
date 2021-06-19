@@ -157,36 +157,41 @@ def calcular():
             print('Encontrando as mini bacias que pertencem a área de drenagem...')
             print('Há {} mini bacias.'.format(len(mini_bacias)))
             t1 = time()
-            ad = [mini_bacia]
-            ad_c = ad.copy()
-            ad_idx = [mini_bacia_idxs]
             c = 1
+            ad_c = [mini_bacia]
+            
+            minis = mini_bacias['Mini'].values
+            minijus = mini_bacias['MiniJus']
+            indices = mini_bacias.index.values
+            filtro = np.zeros(len(minis))
             
             existe_bacia = True
             while existe_bacia == True:
-                ad = remover_duplicatas(ad)
-                ad_idx = remover_duplicatas(ad_idx)
                 print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
                 ad_p = []
                 for mb in ad_c:
-                    f = mini_bacias['MiniJus'] == mb
-                    filtrado = mini_bacias[f]
-                    ad_p = ad_p + list(filtrado['Mini'].values)
-                    ad_idx = ad_idx + list(filtrado.index.values)
-                if len(ad_p) == 0:
+                    f = minijus == mb
+                    filtro[f] = 1
+                    ad_p = ad_p + minis[f].tolist()
+                if len(ad_c) == 0:
                     existe_bacia = False
                 else:
-                    ad = ad + ad_p
-                    ad_c = ad_p.copy()
-                    ad_c = remover_duplicatas(ad_c)
+                    ad_c = remover_duplicatas(ad_p)
                     c = c + 1
-            
+
+            print('{} mini bacias fazem parte da área de drenagem.'.format(sum(filtro)))
+            ad_idx = indices[np.where(filtro == 0, False, True)]
             t2 = time()
             delta_t = t2 - t1
             print('Isso levou {} segundos \n'.format(int(delta_t)))
         
+            print('Aglutinando as minibacias...')
+            t1 = time()
             polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
             mini_bacias_uniao = geopandas.GeoSeries(cascaded_union(polys))
+            t2 = time()
+            delta_t = t2 - t1
+            print('Isso levou {} segundos \n'.format(int(delta_t)))
 
             if kml_b.get() == 1:
                 arquivo_kml = asksaveasfile(defaultextension=".kml")
@@ -199,6 +204,7 @@ def calcular():
         xs, ys, ids = procurar_cadastros_siout(df_extrato_siout, mini_bacias_uniao)
        
         #Plotando os mapas
+        print('Plotando...')
         fig, ax = plt.subplots(figsize=(8,8))
         
         bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
