@@ -64,7 +64,7 @@ def selecionar_extrato():
     print('Extrato do SIOUT lido com sucesso!\n')
     print('ATENÇÃO: o programa não faz nenhuma filtragem no extrato do SIOUT. Todos os cadastros listados serão levados em consideração no balanço hídrico!\n')
     btn_extrato["text"] = "extrato SIOUT carregado"
-    
+
 def selecionar_kml():
     print('Lendo kml da área de drenagem...')
     area_kml_str = askopenfilename()
@@ -92,7 +92,7 @@ def str_num_to_float(str_array):
             i = str(i).replace(',', '.')
         float_array.append(float(i))
     return np.array(float_array)
-    
+
 def procurar_cadastros_siout(extrato, area):
 
     #processos do siout na area de drenagem
@@ -108,20 +108,20 @@ def procurar_cadastros_siout(extrato, area):
             xs.append(p.x)
             ys.append(p.y)
             ids.append(idx)
-    
+
     t2 = time()
     delta_t = t2 - t1
     print('Isso levou {} segundos \n'.format(int(delta_t)))
-    
+
     return xs, ys, ids
 
 def calcular():
     print('Calculando balanço hídrico...\n')
-    
+
     print('Lendo arquivo das bacias hidrográficas...\n')
     bacias = geopandas.read_file(arquivo_bacias)
     #bacias = bacias.to_crs("EPSG:4674")
-    
+
     print('Lendo coordenadas...')
     longitude =  float(entry_x.get().replace(',','.'))
     latitude =  float(entry_y.get().replace(',','.'))
@@ -137,8 +137,8 @@ def calcular():
             print('O ponto selcionado pertence a bacia {}\n'.format(bacia))
             pertence = True
             break
-    
-    if pertence == True:        
+
+    if pertence == True:
 
         print('Lendo arquivo de mini bacias...\n')
         mini_bacias = geopandas.read_file(dic_cod_bacia[bacia.lower()])
@@ -153,18 +153,18 @@ def calcular():
                 break
 
         if kml_carregado == False:
-        
+
             print('Encontrando as mini bacias que pertencem a área de drenagem...')
             print('Há {} mini bacias.'.format(len(mini_bacias)))
             t1 = time()
             c = 1
             ad_c = [mini_bacia]
-            
+
             minis = mini_bacias['Mini'].values
             minijus = mini_bacias['MiniJus']
             indices = mini_bacias.index.values
             filtro = np.zeros(len(minis))
-            
+
             existe_bacia = True
             while existe_bacia == True:
                 print('Iteração {} para {} mini bacias'.format(c, len(ad_c)))
@@ -184,7 +184,7 @@ def calcular():
             t2 = time()
             delta_t = t2 - t1
             print('Isso levou {} segundos \n'.format(int(delta_t)))
-        
+
             print('Aglutinando as minibacias...')
             t1 = time()
             polys = [mini_bacias.iloc[idx]['geometry'] for idx in ad_idx]
@@ -196,29 +196,29 @@ def calcular():
             if kml_b.get() == 1:
                 arquivo_kml = asksaveasfile(defaultextension=".kml")
                 mini_bacias_uniao.to_file(arquivo_kml.name, driver='KML')
-            
+
         else:
-            
+
             mini_bacias_uniao = area_kml.loc[[0], 'geometry']
-        
+
         xs, ys, ids = procurar_cadastros_siout(df_extrato_siout, mini_bacias_uniao)
-       
+
         #Plotando os mapas
         print('Plotando...')
         fig, ax = plt.subplots(figsize=(8,8))
-        
+
         bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
         mini_bacias_uniao.plot(ax=ax, color='gray', alpha=1)
         mini_bacias.loc[[mini_bacia_idxs], 'geometry'].plot(ax=ax, color='black', alpha=1)
         ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
         ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
-        
+
         plt.title('Bacia {}'.format(bacia))
         plt.ylabel('Latitude')
         plt.xlabel('Longitude')
         plt.legend()
         plt.grid()
-        
+
         plt.tight_layout()
         #manager = plt.get_current_fig_manager()
         #manager.full_screen_toggle()
@@ -234,9 +234,9 @@ def calcular():
         perc_out =  mini_bacias.loc[mini_bacia_idxs, 'perc_out']
         print('Máximo outorgável: {}'.format(perc_out))
         vaz_max_out = vaz_bacias * perc_out
-        bal_inicial = vaz_max_out - vaz_siout_mes 
+        bal_inicial = vaz_max_out - vaz_siout_mes
         bal_final = bal_inicial - vaz_simulada
-        
+
         print('Vazão da bacia: {}'.format(vaz_bacias))
         print('Usos SIOUT: {}'.format(vaz_siout_mes))
         print('Balanço inicial: {}'.format(bal_inicial))
@@ -269,10 +269,10 @@ def calcular():
         #manager = plt.get_current_fig_manager()
         #manager.full_screen_toggle()
         plt.show()
-    
+
     else:
         print('O ponto não pertence ao estado do RS.')
-  
+
 #GUI
 root = Tk()
 root.title("Balanço hídrico")
@@ -303,10 +303,10 @@ kml_b = IntVar()
 salvar_kml = Checkbutton(root, variable=kml_b, onvalue=1, offvalue=0, text='Salvar KML')
 salvar_kml.grid(row=4, column=0, sticky='W', padx=10, pady=10)
 
-btn_kml = Button(root, text="Carregar área de drenagem", command=selecionar_kml)
-btn_kml.grid(row=5, column=0, sticky='W', padx=10, pady=10)
+#btn_kml = Button(root, text="Carregar área de drenagem", command=selecionar_kml)
+#btn_kml.grid(row=5, column=0, sticky='W', padx=10, pady=10)
 
 btn_calcular = Button(root, text="Calcular balanço hídrico", command=calcular)
-btn_calcular.grid(row=6, column=1, sticky='E', padx=10, pady=10)
+btn_calcular.grid(row=5, column=1, sticky='E', padx=10, pady=10)
 
 root.mainloop()
