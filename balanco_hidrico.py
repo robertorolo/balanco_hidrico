@@ -140,16 +140,25 @@ def calcular():
 
     if pertence == True:
 
-        print('Lendo arquivo de mini bacias...\n')
+        print('Lendo arquivo de mini bacias...')
+        t1 = time()
         mini_bacias = geopandas.read_file(dic_cod_bacia[bacia.lower()])
         #mini_bacias = mini_bacias.to_crs("EPSG:4674")
+        t2 = time()
+        delta_t = t2 - t1
+        print('Isso levou {} segundos \n'.format(int(delta_t)))
+        
 
         print('Verificando a qual mini bacia o ponto informado petence...')
+        t1 = time()
         for idx, row in mini_bacias.iterrows():
             if ponto_informado.within(row['geometry']):
-                mini_bacia = int(row['Mini'])
+                mini_bacia = row['Mini']
                 mini_bacia_idxs = idx
-                print('O ponto selcionado pertence a mini bacia {}\n'.format(mini_bacia))
+                print('O ponto selcionado pertence a mini bacia {}'.format(mini_bacia))
+                t2 = time()
+                delta_t = t2 - t1
+                print('Isso levou {} segundos \n'.format(int(delta_t)))
                 break
 
         if kml_carregado == False:
@@ -164,6 +173,7 @@ def calcular():
             minijus = mini_bacias['MiniJus']
             indices = mini_bacias.index.values
             filtro = np.zeros(len(minis))
+            filtro[mini_bacia_idxs] = 1
 
             existe_bacia = True
             while existe_bacia == True:
@@ -210,9 +220,10 @@ def calcular():
         bacias.loc[[bacia_idx], 'geometry'].plot(ax=ax, color='gainsboro', edgecolor='silver', alpha=1)
         mini_bacias_uniao.plot(ax=ax, color='gray', alpha=1)
         mini_bacias.loc[[mini_bacia_idxs], 'geometry'].plot(ax=ax, color='black', alpha=1)
-        ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
         ax.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
-
+        if len(xs) > 0:
+            ax.scatter(x=xs, y=ys, label='Cadastros SIOUT')
+        
         plt.title('Bacia {}'.format(bacia))
         plt.ylabel('Latitude')
         plt.xlabel('Longitude')
