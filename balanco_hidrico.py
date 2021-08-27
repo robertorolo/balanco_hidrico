@@ -16,6 +16,9 @@ fiona.supported_drivers['KML'] = 'rw'
 from matplotlib import rcParams
 rcParams.update({'figure.autolayout': True})
 
+import ctypes
+ctypes.windll.shcore.SetProcessDpiAwareness(1) #texto nitido em monitores de alta resolucao
+
 kml_carregado = False
 
 arquivo_bacias = "dados/bacias/Bacia_Hidrografica.shp"
