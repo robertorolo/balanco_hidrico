@@ -29,7 +29,7 @@ dic_cod_bacia = {
     'caí': "dados/mini_bacias/G030_mini_19_02.shp",
     'taquari-antas': "dados/mini_bacias/G040_mini_19_02.shp",
     'alto jacuí': "dados/mini_bacias/G050_mini_19_02.shp",
-    'vacacaí-vacacaí-mirim': "dados/mini_bacias/G060_mini_19_02.shp",
+    'vacacaí vacacaí-mirim': "dados/mini_bacias/G060_mini_19_02.shp",
     'baixo jacuí': "dados/mini_bacias/G070_mini_19_02.shp",
     'lago guaíba': "dados/mini_bacias/G080_mini_19_02.shp",
     'pardo': "dados/mini_bacias/G090_mini_19_02.shp",
