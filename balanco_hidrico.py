@@ -11,6 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 6})
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -97,7 +98,7 @@ def remover_duplicatas(lista):
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Balanço hídrico")
-        Dialog.resize(1500, 1500)
+        Dialog.resize(650, 600)
         #Dialog.showMaximized()
         self.gridLayout_2 = QtWidgets.QGridLayout(Dialog)
         self.gridLayout_2.setObjectName("gridLayout_2")
@@ -139,14 +140,15 @@ class Ui_Dialog(object):
         self.gridLayout_2.addWidget(self.groupBox, 0, 0, 1, 1)
        
         #widget 1
-        self.mapa, self.axmapa = plt.subplots(figsize=(6,6))
+        self.mapa, self.axmapa = plt.subplots(figsize=(10,10))
         self.canvasmapa = FigureCanvas(self.mapa)
         self.widget = self.canvasmapa
         self.widget.setObjectName("widget")
         self.gridLayout_2.addWidget(self.widget, 0, 1, 1, 1)
         self.mtoolbar = NavigationToolbar(self.canvasmapa, self.widget)
+        
         #widget 2
-        self.balplot, self.axbalplots = plt.subplots(2, 1, figsize=(3,9))
+        self.balplot, self.axbalplots = plt.subplots(2, 1, figsize=(4,10))
         self.canvasbalplot = FigureCanvas(self.balplot)
         self.widget_2 = self.canvasbalplot
         self.widget_2.setObjectName("widget_2")
@@ -286,9 +288,9 @@ class Ui_Dialog(object):
             bacias.loc[[bacia_idx], 'geometry'].plot(ax=self.axmapa, color='gainsboro', edgecolor='silver', alpha=1)
             self.mini_bacias_uniao.plot(ax=self.axmapa, color='gray', alpha=1)
             mini_bacias.loc[[mini_bacia_idxs], 'geometry'].plot(ax=self.axmapa, color='black', alpha=1)
-            self.axmapa.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=50)
+            self.axmapa.scatter(ponto_informado.x, ponto_informado.y, label='Ponto informado', marker='x', s=15)
             if len(xs) > 0:
-                self.axmapa.scatter(x=xs, y=ys, label='Cadastros SIOUT')
+                self.axmapa.scatter(x=xs, y=ys, label='Cadastros SIOUT', s=15)
             
             self.axmapa.set_title('Bacia {}'.format(bacia))
             self.axmapa.set_ylabel('Latitude')
@@ -297,6 +299,7 @@ class Ui_Dialog(object):
             self.axmapa.grid()
             
             self.canvasmapa.draw_idle()
+            self.mapa.tight_layout()
 
             #plotando o balanço hídrico
             vaz_simulada = self.vaz_sim.value()
@@ -336,6 +339,8 @@ class Ui_Dialog(object):
             self.axbalplots[1].set_title('Balanço final')
             self.axbalplots[1].set_ylabel('Vazão m³/s')
             self.axbalplots[1].grid()
+
+            self.balplot.tight_layout()
             
             self.df_extrato_siout.loc[ids].to_csv('extrato_filtrado.csv', index=False, sep=';')
 
