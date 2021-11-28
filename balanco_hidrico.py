@@ -11,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 6})
+plt.rcParams.update({'font.size': 10})
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -98,7 +98,7 @@ def remover_duplicatas(lista):
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Balanço hídrico")
-        Dialog.resize(650, 600)
+        Dialog.resize(800, 900)
         #Dialog.showMaximized()
         self.gridLayout_2 = QtWidgets.QGridLayout(Dialog)
         self.gridLayout_2.setObjectName("gridLayout_2")
@@ -327,15 +327,15 @@ class Ui_Dialog(object):
 
             cores = np.where(bal_inicial > 0, 'g', 'r')
             self.axbalplots[0].bar([x for x in range(1, 13)], bal_inicial, tick_label=tick_label, color=cores)
-            for x,y in zip([x for x in range(1, 13)], bal_inicial):
-                self.axbalplots[0].text(x-.25, y, str(round(y,4)))
+            #for x,y in zip([x for x in range(1, 13)], bal_inicial):
+            #    self.axbalplots[0].text(x-.25, y, str(round(y,4)))
             self.axbalplots[0].set_title('Balanço inicial')
             self.axbalplots[0].set_ylabel('Vazão m³/s')
             self.axbalplots[0].grid()
             cores = np.where(bal_final > 0, 'g', 'r')
             self.axbalplots[1].bar([x for x in range(1, 13)], bal_final, tick_label=tick_label, color=cores)
-            for x,y in zip([x for x in range(1, 13)], bal_final):
-                self.axbalplots[1].text(x-.25, y, str(round(y,4)))
+            #for x,y in zip([x for x in range(1, 13)], bal_final):
+            #    self.axbalplots[1].text(x-.25, y, str(round(y,4)))
             self.axbalplots[1].set_title('Balanço final')
             self.axbalplots[1].set_ylabel('Vazão m³/s')
             self.axbalplots[1].grid()
